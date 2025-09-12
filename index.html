@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Bracelet Controller</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#409EFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Smart Bracelet">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .status.connected {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+        
+        .status.disconnected {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #F44336;
+        }
+        
+        .status.connecting {
+            background: rgba(255, 193, 7, 0.3);
+            border-color: #FFC107;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .color-picker {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .color-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .color-btn:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+        
+        .color-btn.active {
+            border-color: white;
+            transform: scale(1.1);
+        }
+        
+        .color-btn::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .color-btn.active::after {
+            opacity: 1;
+        }
+        
+        .lyrics-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            margin: 10px 0;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        .lyrics-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .vibration-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .vibration-controls button {
+            padding: 12px;
+            font-size: 14px;
+        }
+        
+        .text-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .text-controls button {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+        }
+        
+        .logs {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .battery-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .battery-level {
+            width: 60px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 3px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 1px;
+            transition: width 0.3s ease;
+        }
+        
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .install-prompt.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .github-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                margin: 0;
+                padding: 20px;
+            }
+            
+            .color-picker {
+                justify-content: center;
+            }
+            
+            .color-btn {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .github-link {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="https://github.com" class="github-link">📱 GitHub</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Smart Bracelet</h1>
+            <div class="subtitle">Wireless Music & Notification Control</div>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            📱 Device Not Connected
+        </div>
+        
+        <button id="connectBtn" class="primary-btn">🔗 Connect Bracelet</button>
+        
+        <div id="controls" style="display: none;">
+            <!-- Battery Status -->
+            <div class="battery-indicator">
+                🔋 Battery: 
+                <div class="battery-level">
+                    <div class="battery-fill" style="width: 75%"></div>
+                </div>
+                <span id="batteryText">75%</span>
+            </div>
+            
+            <!-- LED Color Control -->
+            <div class="section">
+                <h3>💡 LED Color Control</h3>
+                <div class="color-picker">
+                    <div class="color-btn" style="background: #FF0000;" data-color="#FF0000" title="Red"></div>
+                    <div class="color-btn" style="background: #00FF00;" data-color="#00FF00" title="Green"></div>
+                    <div class="color-btn" style="background: #0000FF;" data-color="#0000FF" title="Blue"></div>
+                    <div class="color-btn" style="background: #FFFF00;" data-color="#FFFF00" title="Yellow"></div>
+                    <div class="color-btn" style="background: #FF00FF;" data-color="#FF00FF" title="Magenta"></div>
+                    <div class="color-btn" style="background: #00FFFF;" data-color="#00FFFF" title="Cyan"></div>
+                    <div class="color-btn" style="background: #FF8000;" data-color="#FF8000" title="Orange"></div>
+                    <div class="color-btn" style="background: #8000FF;" data-color="#8000FF" title="Purple"></div>
+                </div>
+                <button onclick="toggleLED()">💡 Toggle LED</button>
+                <button onclick="setRainbowMode()">🌈 Rainbow Mode</button>
+            </div>
+            
+            <!-- Vibration Control -->
+            <div class="section">
+                <h3>📳 Vibration Control</h3>
+                <div class="vibration-controls">
+                    <button onclick="sendVibration('tap')">👆 Tap</button>
+                    <button onclick="sendVibration('double')">👆👆 Double Tap</button>
+                    <button onclick="sendVibration('heartbeat')">💓 Heartbeat</button>
+                    <button onclick="sendVibration('pulse')">⚡ Pulse</button>
+                    <button onclick="sendVibration('long')">📳 Long Buzz</button>
+                    <button onclick="sendVibration('stop')">🛑 Stop</button>
+                </div>
+            </div>
+            
+            <!-- Display Control -->
+            <div class="section">
+                <h3>📱 Display Control</h3>
+                <textarea id="lyricsInput" class="lyrics-input" placeholder="Enter lyrics, messages, or any text to display on the bracelet screen..."></textarea>
+                <div class="text-controls">
+                    <button onclick="sendLyrics()">📤 Send Text</button>
+                    <button onclick="clearDisplay()">🗑️ Clear Screen</button>
+                </div>
+                <button onclick="showTime()">🕐 Show Time</button>
+                <button onclick="showNotification()">📢 Test Notification</button>
+            </div>
+        </div>
+        
+        <div id="logs" class="logs"></div>
+    </div>
+    
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt">
+        <div>📱 Add to Home Screen for better experience!</div>
+        <button onclick="hideInstallPrompt()" style="margin-top: 10px; width: auto; padding: 8px 16px;">Got it!</button>
+    </div>
+
+    <script>
+        let bluetoothDevice;
+        let bluetoothServer;
+        let serviceUUID = '12345678-1234-1234-1234-123456789abc';
+        let characteristicUUID = '87654321-4321-4321-4321-cba987654321';
+        let characteristic;
+        let isConnecting = false;
+        let ledOn = true;
+        let currentColor = '#FF0000';
+        
+        const connectBtn = document.getElementById('connectBtn');
+        const status = document.getElementById('status');
+        const controls = document.getElementById('controls');
+        const logs = document.getElementById('logs');
+        const lyricsInput = document.getElementById('lyricsInput');
+        const batteryText = document.getElementById('batteryText');
+        const batteryFill = document.querySelector('.battery-fill');
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logs.innerHTML += `<div>[${timestamp}] ${emoji} ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            // Keep only last 50 log entries
+            const logEntries = logs.children;
+            if (logEntries.length > 50) {
+                logs.removeChild(logEntries[0]);
+            }
+        }
+        
+        // Connect to Bluetooth device
+        async function connectDevice() {
+            if (isConnecting) return;
+            
+            try {
+                isConnecting = true;
+                updateConnectionStatus('connecting');
+                log('Scanning for Bluetooth devices...', 'info');
+                
+                // Request Bluetooth device
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [serviceUUID]
+                });
+                
+                log(`Found device: ${bluetoothDevice.name || 'Unknown Device'}`, 'info');
+                
+                // Add disconnect event listener
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                
+                // Connect to GATT server
+                bluetoothServer = await bluetoothDevice.gatt.connect();
+                log('GATT server connected successfully', 'success');
+                
+                // Get service
+                const service = await bluetoothServer.getPrimaryService(serviceUUID);
+                log('Primary service acquired', 'success');
+                
+                // Get characteristic
+                characteristic = await service.getCharacteristic(characteristicUUID);
+                log('Characteristic acquired', 'success');
+                
+                // Enable notifications (optional)
+                try {
+                    await characteristic.startNotifications();
+                    characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                    log('Notifications enabled', 'success');
+                } catch (error) {
+                    log('Notifications not available', 'info');
+                }
+                
+                // Update UI
+                updateConnectionStatus('connected');
+                log('🎉 Smart bracelet connected successfully!', 'success');
+                
+                // Send initial handshake
+                sendData({ type: 'handshake', timestamp: Date.now() });
+                
+            } catch (error) {
+                log(`Connection failed: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            } finally {
+                isConnecting = false;
+            }
+        }
+        
+        // Handle device disconnection
+        function onDisconnected() {
+            log('🔌 Device disconnected', 'info');
+            updateConnectionStatus('disconnected');
+            bluetoothDevice = null;
+            bluetoothServer = null;
+            characteristic = null;
+        }
+        
+        // Handle notifications from device
+        function handleNotifications(event) {
+            const value = new TextDecoder().decode(event.target.value);
+            try {
+                const data = JSON.parse(value);
+                if (data.type === 'battery') {
+                    updateBatteryLevel(data.level);
+                } else if (data.type === 'status') {
+                    log(`Device status: ${data.message}`, 'info');
+                }
+            } catch (error) {
+                log(`Received: ${value}`, 'info');
+            }
+        }
+        
+        // Update connection status UI
+        function updateConnectionStatus(state) {
+            const statusTexts = {
+                'disconnected': '📱 Device Not Connected',
+                'connecting': '🔄 Connecting...',
+                'connected': '✅ Bracelet Connected'
+            };
+            
+            const buttonTexts = {
+                'disconnected': '🔗 Connect Bracelet',
+                'connecting': '🔄 Connecting...',
+                'connected': '🔌 Disconnect'
+            };
+            
+            status.textContent = statusTexts[state];
+            status.className = `status ${state}`;
+            connectBtn.textContent = buttonTexts[state];
+            connectBtn.disabled = state === 'connecting';
+            
+            if (state === 'connected') {
+                connectBtn.onclick = disconnectDevice;
+                controls.style.display = 'block';
+            } else {
+                connectBtn.onclick = connectDevice;
+                controls.style.display = 'none';
+            }
+        }
+        
+        // Disconnect device
+        function disconnectDevice() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+        }
+        
+        // Send data to bracelet
+        async function sendData(data) {
+            if (!characteristic) {
+                log('Device not connected', 'error');
+                return false;
+            }
+            
+            try {
+                const jsonData = JSON.stringify(data);
+                const encoder = new TextEncoder();
+                const encodedData = encoder.encode(jsonData);
+                
+                await characteristic.writeValue(encodedData);
+                log(`Sent: ${jsonData}`, 'success');
+                return true;
+            } catch (error) {
+                log(`Send failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // LED Control Functions
+        function sendColor(color) {
+            currentColor = color;
+            sendData({
+                type: 'led',
+                color: color,
+                mode: 'solid',
+                brightness: 255
+            });
+            
+            // Update UI
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-color="${color}"]`)?.classList.add('active');
+        }
+        
+        function toggleLED() {
+            ledOn = !ledOn;
+            sendData({
+                type: 'led',
+                state: ledOn ? 'on' : 'off',
+                color: currentColor
+            });
+        }
+        
+        function setRainbowMode() {
+            sendData({
+                type: 'led',
+                mode: 'rainbow',
+                speed: 100
+            });
+        }
+        
+        // Vibration Control Functions
+        function sendVibration(pattern) {
+            const vibrationPatterns = {
+                'tap': { duration: 100, strength: 'light' },
+                'double': { pattern: [100, 50, 100], strength: 'medium' },
+                'heartbeat': { pattern: [100, 100, 200, 100], strength: 'medium' },
+                'pulse': { duration: 300, strength: 'strong' },
+                'long': { duration: 1000, strength: 'strong' },
+                'stop': { duration: 0, strength: 'off' }
+            };
+            
+            sendData({
+                type: 'vibration',
+                ...vibrationPatterns[pattern]
+            });
+        }
+        
+        // Display Control Functions
+        function sendLyrics() {
+            const text = lyricsInput.value.trim();
+            if (!text) {
+                log('Please enter some text', 'error');
+                return;
+            }
+            
+            sendData({
+                type: 'display',
+                text: text,
+                scroll: text.length > 20,
+                speed: 50,
+                font: 'default'
+            });
+        }
+        
+        function clearDisplay() {
+            sendData({
+                type: 'display',
+                text: '',
+                clear: true
+            });
+        }
+        
+        function showTime() {
+            sendData({
+                type: 'display',
+                mode: 'time',
+                format: '12h'
+            });
+        }
+        
+        function showNotification() {
+            sendData({
+                type: 'notification',
+                title: 'Test Notification',
+                message: 'This is a test message from your phone!',
+                icon: 'message'
+            });
+        }
+        
+        // Battery level update
+        function updateBatteryLevel(level) {
+            batteryText.textContent = `${level}%`;
+            batteryFill.style.width = `${level}%`;
+            
+            // Change color based on battery level
+            if (level > 50) {
+                batteryFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+            } else if (level > 20) {
+                batteryFill.style.background = 'linear-gradient(90deg, #FF9800, #FFC107)';
+            } else {
+                batteryFill.style.background = 'linear-gradient(90deg, #F44336, #FF5722)';
+            }
+        }
+        
+        // Color button event listeners
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const color = btn.dataset.color;
+                sendColor(color);
+            });
+        });
+        
+        // Install prompt functions
+        function showInstallPrompt() {
+            document.getElementById('installPrompt').classList.add('show');
+        }
+        
+        function hideInstallPrompt() {
+            document.getElementById('installPrompt').classList.remove('show');
+        }
+        
+        // PWA install handling
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+            setTimeout(showInstallPrompt, 3000);
+        });
+        
+        // Service Worker registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => log('Service Worker registered', 'success'))
+                    .catch(() => log('Service Worker registration failed', 'info'));
+            });
+        }
+        
+        // Initialize
+        if (!navigator.bluetooth) {
+            log('❌ Web Bluetooth not supported in this browser', 'error');
+            log('📱 Please use Chrome, Edge, or Safari', 'info');
+            connectBtn.disabled = true;
+            connectBtn.textContent = '❌ Bluetooth Not Supported';
+        } else {
+            log('✅ Web Bluetooth is supported', 'success');
+            log('🔍 Click connect button to start scanning', 'info');
+        }
+        
+        // Set initial color
+        document.querySelector('[data-color="#FF0000"]')?.classList.add('active');
+    </script>
+</body>
+</html>
